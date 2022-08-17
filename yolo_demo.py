@@ -24,7 +24,8 @@ net = cv2.dnn.readNetFromDarknet(model_config, model_weights)
 net.setPreferableBackend(cv2.dnn.DNN_BACKEND_OPENCV)
 net.setPreferableBackend(cv2.dnn.DNN_TARGET_CPU)
 
-# draw bounding box
+
+# function to draw bounding box
 
 def find_objects(outputs, img):
     height, weight, channel = img.shape
@@ -34,42 +35,42 @@ def find_objects(outputs, img):
 
     for output in outputs:
         for det in output:
-            scores= det[5:]
+            scores = det[5:]
             class_id = np.argmax(scores)
             confidence = scores[class_id]
             if confidence > CONFIG_THRESOLD:
-                w, h = int(det[2]*weight), int(det[3]*height)
-                x, y = int((det[0]*weight)-w/2), int((det[1]*height)-h/2)
-                bbox.append([x,y,w,h])
+                w, h = int(det[2] * weight), int(det[3] * height)
+                x, y = int((det[0] * weight) - w / 2), int((det[1] * height) - h / 2)
+                bbox.append([x, y, w, h])
                 class_ids.append(class_id)
                 confs.append(float(confidence))
 
     indices = cv2.dnn.NMSBoxes(bbox, confs, CONFIG_THRESOLD, NMS_THRESHOLD)
     for i in indices:
         box = bbox[i]
-        x,y,w,h = box[0], box[1], box[2], box[3]
-        cv2.rectangle(img, (x,y), (x+w, y+h), (255,0,255), 2)
-        cv2.putText(img, f'{class_names[class_ids[i]].upper()} {int(confs[i]*100)}%', (x,y-10),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255,0,255), 2)
+        x, y, w, h = box[0], box[1], box[2], box[3]
+        cv2.rectangle(img, (x, y), (x + w, y + h), (255, 0, 255), 2)
+        cv2.putText(img, f'{class_names[class_ids[i]].upper()} {int(confs[i] * 100)}%', (x, y - 10),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 0, 255), 2)
+
 
 while True:
     success, img = capture.read()
 
-    blob = cv2.dnn.blobFromImage(img, 1/255, (wht, wht), [0,0,0], 1, crop=False)
+    blob = cv2.dnn.blobFromImage(img, 1 / 255, (wht, wht), [0, 0, 0], 1, crop=False)
     net.setInput(blob)
 
     layer_names = net.getLayerNames()
-    # print(layerNames)
-    # print(net.getUnconnectedOutLayers())
-    output_names = [layer_names[i-1] for i in net.getUnconnectedOutLayers()]
+    output_names = [layer_names[i - 1] for i in net.getUnconnectedOutLayers()]
     outputs = net.forward(output_names)
-    # print(len(outputs))
-    # print(outputs[0].shape)
-    # print(outputs[1].shape)
-    # print(outputs[2].shape)
-    # print(outputs[0][0])
 
     find_objects(outputs, img)
 
-    cv2.imshow('Image',img)
-    cv2.waitKey(1)
+    cv2.imshow('Image', img)
+    key = cv2.waitKey(1)
+
+    # to close the image frame
+    if key == ord("q"):
+        break
+
+cv2.destroyAllWindows()
