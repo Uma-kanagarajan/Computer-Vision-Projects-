@@ -42,7 +42,7 @@ ap.add_argument("-p", "--shape-predictor", required=True, help="path to facial l
 # ap.add_argument("-v", "--video", type=str, default="", help="path to input video file")
 args = vars(ap.parse_args())
 
-# initialize dlib's face detector (HOG-based) and then create the facial landmark predictor
+# initialize dlib's face detecto    r (HOG-based) and then create the facial landmark predictor
 detector = dlib.get_frontal_face_detector()
 predictor = dlib.shape_predictor(args["shape_predictor"])
 
@@ -69,6 +69,13 @@ while True:
 
     # loop over the face detections
     for face in faces:
+        # draw face bounding box
+        x = face.left()
+        y = face.top()
+        w = face.right() - x
+        h = face.bottom() - y
+        cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+
         # determine the facial landmarks for the face region, then
         # convert the landmark (x, y)-coordinates to a NumPy array
         shape = predictor(gray, face)
@@ -101,13 +108,14 @@ while True:
             cv2.putText(
                             frame,
                             "Smiling",
-                            (400, 150),
+                            (x + 60, y - 10),
                             cv2.FONT_HERSHEY_SIMPLEX,
                             0.7,
                             (0, 0, 255),
                             2,
                         )
 
+        # Blink condition
         if ear < EYE_THRESH:
             counter += 1
         else:
@@ -115,14 +123,16 @@ while True:
                 total += 1
             counter = 0
 
-        if EYE_THRESH > left_ear > right_ear:
+        # left wink condition
+        if EYE_THRESH > right_ear and left_ear < 0.93 * right_ear:
             l_counter += 1
         else:
             if l_counter >= EYE_CONSEC_FRAMES:
                 l_total += 1
             l_counter = 0
 
-        if EYE_THRESH > right_ear > left_ear:
+        # right wink condition
+        if EYE_THRESH > left_ear and right_ear < 0.93 * left_ear:
             r_counter += 1
         else:
             if r_counter >= EYE_CONSEC_FRAMES:
@@ -139,15 +149,6 @@ while True:
             2,
         )
 
-        cv2.putText(
-            frame,
-            "EAR: {:.2f} L-EAR: {:.2f} R-EAR: {:.2f} ".format(ear, left_ear, right_ear),
-            (10, 60),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.7,
-            (0, 0, 255),
-            2,
-        )
 
     # visualize the image
     cv2.imshow("Frame", frame)
